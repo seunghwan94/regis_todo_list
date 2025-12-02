@@ -1,6 +1,8 @@
 # Regis Todo List
 **Reg**ular **I**nspection **S**ystem (정기 점검 Todo List 프로그램)
 
+<img width="1914" height="908" alt="image" src="https://github.com/user-attachments/assets/fc276c72-b604-4584-beac-57bbce7844c4" />
+
 정기 점검 업무를 체계적으로 관리할 수 있도록 만든 웹 기반 관리 도구입니다.
 고객사별 정기 점검 스케줄을 자동 정리하고, 체크리스트 기반으로 진행 상황을 손쉽게 확인할 수 있습니다.
 
