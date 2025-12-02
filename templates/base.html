@@ -257,8 +257,14 @@
         }
         
         .overdue td {
-            background: linear-gradient(90deg, rgba(228, 81, 81, 0.15) 0%, rgba(228, 81, 81, 0.1) 100%) !important;
-            border-left: 4px solid #e45151;
+            background: transparent !important;
+            border-left: none;
+        }
+
+        /* 상태 컬럼(예: .status-cell)에만 색 적용 */
+        .overdue td.status-cell {
+            background: rgba(255, 120, 120, 0.18) !important;
+            border-radius: 999px;
         }
 
         /* Reduce the size of action buttons in tables to prevent horizontal overflow */

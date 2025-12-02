@@ -420,26 +420,21 @@ def get_all_tasks() -> List[sqlite3.Row]:
 
 
 def dashboard_handler(environ) -> Tuple[bytes, str]:
-    """
-    Handle the dashboard page (GET /) and return (body, content_type).
-
-    Supports query parameters:
-      - month (1–12): month to display, default current month.
-      - year: year to display, default current year.
-      - company: optional company ID to filter tasks.
-    """
     query = urllib.parse.parse_qs(environ.get('QUERY_STRING', ''))
-    # Determine month
+
+    # month
     try:
         selected_month = int(query.get('month', [datetime.now().month])[0])
     except ValueError:
         selected_month = datetime.now().month
-    # Determine year
+
+    # year
     try:
         selected_year = int(query.get('year', [datetime.now().year])[0])
     except ValueError:
         selected_year = datetime.now().year
-    # Determine company filter
+
+    # company filter
     company_filter = query.get('company', [None])[0]
     company_id: Optional[int] = None
     if company_filter:
@@ -447,10 +442,21 @@ def dashboard_handler(environ) -> Tuple[bytes, str]:
             company_id = int(company_filter)
         except ValueError:
             company_id = None
+
+    # ✅ 방금 추가한 open 파라미터 처리
+    open_task_id: Optional[int] = None
+    open_param = query.get('open', [None])[0]
+    if open_param is not None:
+        try:
+            open_task_id = int(open_param)
+        except ValueError:
+            open_task_id = None
+
+    # 이 달의 task 목록
     tasks = get_tasks_for_month(selected_month)
     if company_id is not None:
         tasks = [t for t in tasks if t['company_id'] == company_id]
-    # Annotate tasks with incomplete count and items (per year-month)
+
     annotated_tasks: List[Dict[str, Any]] = []
     for t in tasks:
         incomplete = get_incomplete_count_year_month(t['id'], selected_year, selected_month)
@@ -461,26 +467,14 @@ def dashboard_handler(environ) -> Tuple[bytes, str]:
             'is_overdue': incomplete > 0,
             'items': items_with_status,
         })
-    companies = get_companies()
-    # Compute per-month stats for the navigation bar: how many tasks scheduled and how many completed
-    month_stats: Dict[int, Tuple[int, int]] = {}
-    for m in range(1, 13):
-        month_tasks = get_tasks_for_month(m)
-        # Apply company filter to stats if a company is selected
-        if company_id is not None:
-            month_tasks = [t for t in month_tasks if t['company_id'] == company_id]
-        total = len(month_tasks)
-        done = 0
-        for t in month_tasks:
-            # Determine number of incomplete items for this year and month
-            incomplete = get_incomplete_count_year_month(t['id'], selected_year, m)
-            if incomplete == 0:
-                done += 1
-        month_stats[m] = (done, total)
 
-    # Build list of years for selection: current year ± 2 for quick navigation
+    companies = get_companies()
     current_year = datetime.now().year
     years = list(range(current_year - 2, current_year + 3))
+
+    # ✅ 여기에서 월별 통계 생성
+    month_stats = build_month_stats(selected_year, company_id)
+
     body = render_template(
         "index.html",
         {
@@ -492,10 +486,43 @@ def dashboard_handler(environ) -> Tuple[bytes, str]:
             'companies': companies,
             'selected_company': company_id,
             'years': years,
+            'open_task_id': open_task_id,
             'month_stats': month_stats,
         },
     )
     return body, 'text/html'
+
+
+
+def build_month_stats(year: int, company_id: Optional[int] = None) -> Dict[int, Tuple[int, int]]:
+    """
+    각 월별로 (완료된 점검 개수, 전체 점검 개수)를 계산해서
+    {1: (done, total), 2: (done, total), ... 12: (...)} 형태로 반환.
+    """
+    stats: Dict[int, Tuple[int, int]] = {}
+
+    for month in range(1, 13):
+        # 이 달에 예정된 모든 task 가져오기
+        tasks = get_tasks_for_month(month)
+
+        # 회사 필터가 있으면 필터 적용
+        if company_id is not None:
+            tasks = [t for t in tasks if t['company_id'] == company_id]
+
+        total_tasks = len(tasks)
+        done_tasks = 0
+
+        for t in tasks:
+            # 이 task의 해당 연도/월 미완료 항목 개수
+            incomplete = get_incomplete_count_year_month(t['id'], year, month)
+            # 체크리스트 항목이 하나도 없는 경우는 완전 완료로 보지 않도록
+            items = get_items_with_completion(t['id'], year, month)
+            if total_tasks > 0 and len(items) > 0 and incomplete == 0:
+                done_tasks += 1
+
+        stats[month] = (done_tasks, total_tasks)
+
+    return stats
 
 
 def new_company_get_handler(environ) -> Tuple[bytes, str]:
@@ -1013,11 +1040,12 @@ def complete_item_handler(environ, task_id: int, item_id: int) -> Tuple[bytes, s
 def toggle_item_handler(environ, task_id: int, item_id: int) -> Tuple[bytes, str, str]:
     """
     Toggle the completion status of a checklist item for a specific year and month.
-    Expects POST form data containing 'year' and 'month' (and optional 'company').
+    Expects POST form data containing 'year' and 'month' (and optional 'company', 'open_task').
     Redirects back to the dashboard with the appropriate query parameters.
     """
     form_fields, _ = parse_form_data(environ)
-    # Extract year and month; default to current if missing
+
+    # year / month
     try:
         year = int(form_fields.get('year', [str(datetime.now().year)])[0])
     except ValueError:
@@ -1026,25 +1054,35 @@ def toggle_item_handler(environ, task_id: int, item_id: int) -> Tuple[bytes, str
         month = int(form_fields.get('month', [str(datetime.now().month)])[0])
     except ValueError:
         month = datetime.now().month
-    # Determine current status and toggle
+
+    # 현재 상태 → 토글
     current_status = ensure_completion(item_id, year, month)
     new_status = 0 if current_status == 1 else 1
+
     conn = get_db_connection()
     cur = conn.cursor()
-    # Update existing row
     cur.execute(
         "UPDATE checklist_completions SET completed = ? WHERE item_id = ? AND year = ? AND month = ?",
         (new_status, item_id, year, month),
     )
     conn.commit()
     conn.close()
-    # Build redirect URL preserving selected year, month and company filter
+
+    # 리다이렉트 URL 만들기
     query_params = [f"month={month}", f"year={year}"]
+
     company = form_fields.get('company', [None])[0]
     if company:
         query_params.append(f"company={company}")
+
+    # 어떤 task를 펼쳐 둘지
+    open_task = form_fields.get('open_task', [None])[0]
+    if open_task:
+        query_params.append(f"open={open_task}")
+
     redirect_url = '/' + ('?' + '&'.join(query_params) if query_params else '')
     return b'', 'text/plain', redirect_url
+
 
 
 def update_tasks_visibility_handler(environ) -> Tuple[bytes, str, str]:

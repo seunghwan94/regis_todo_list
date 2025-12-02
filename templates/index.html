@@ -86,7 +86,7 @@
             <tr class="{% if task.is_overdue %}overdue{% endif %} accordion-toggle" 
                 data-bs-toggle="collapse" 
                 data-bs-target="#collapse{{ task.id }}" 
-                aria-expanded="false" 
+                aria-expanded="{{ 'true' if open_task_id == task.id else 'false' }}" 
                 aria-controls="collapse{{ task.id }}"
                 style="cursor: pointer;">
                 <td class="fw-semibold">{{ task.company_name }}</td>
@@ -157,7 +157,7 @@
                     </a>
                 </td>
             </tr>
-            <tr class="collapse" id="collapse{{ task.id }}">
+            <tr class="collapse {% if open_task_id == task.id %}show{% endif %}" id="collapse{{ task.id }}">
                 <td colspan="10" style="padding: 1.5rem; background: linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(118, 75, 162, 0.02) 100%);">
                     <h6 class="mb-3 fw-bold"><i class="bi bi-list-check me-2"></i>체크리스트 항목</h6>
                     <div class="row g-2">
@@ -185,6 +185,7 @@
                                         <input type="hidden" name="year" value="{{ selected_year }}">
                                         <input type="hidden" name="month" value="{{ selected_month }}">
                                         {% if selected_company %}<input type="hidden" name="company" value="{{ selected_company }}">{% endif %}
+                                        <input type="hidden" name="open_task" value="{{ task.id }}">
                                         <button type="submit" class="btn btn-sm {% if item.completed %}btn-warning{% else %}btn-success{% endif %}">
                                             {% if item.completed %}
                                                 <i class="bi bi-x-circle me-1"></i>취소
