@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}메일 작성 - 정기 점검 관리{% endblock %}
+
+{% block content %}
+<h1>{{ company_name }} - {{ year }}년 {{ month }}월 메일 작성</h1>
+<p class="mb-3">아래의 내용을 복사하여 메일로 보내세요. 버튼을 클릭하면 기본 메일 프로그램이 열립니다.</p>
+
+<div class="mb-3">
+    <label class="form-label"><strong>받는 사람</strong></label>
+    {% if recipients %}
+        <p>{{ recipients | join(', ') }}</p>
+    {% else %}
+        <p class="text-muted">지정된 이메일 주소가 없습니다.</p>
+    {% endif %}
+</div>
+<div class="mb-3">
+    <label class="form-label"><strong>제목</strong></label>
+    <input type="text" class="form-control" readonly value="{{ subject }}">
+</div>
+<div class="mb-3">
+    <label class="form-label"><strong>본문</strong></label>
+    <textarea class="form-control" rows="12" readonly>{{ body_text }}</textarea>
+</div>
+
+<a href="{{ mailto_link }}" class="btn btn-success">메일 앱으로 보내기</a>
+<a href="/" class="btn btn-secondary ms-2">대시보드로 돌아가기</a>
+
+{% endblock %}

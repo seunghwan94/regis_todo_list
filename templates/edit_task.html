@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}정기점검 수정 - 정기 점검 관리{% endblock %}
+
+{% block content %}
+<h1>정기점검 수정</h1>
+<form method="post" enctype="multipart/form-data" action="/task/{{ task.id }}/edit">
+    <!-- Company selection (optional change) -->
+    <div class="mb-3">
+        <label for="company_id" class="form-label">고객사 선택</label>
+        <select class="form-select" id="company_id" name="company_id" required>
+            {% for comp in companies %}
+                <option value="{{ comp.id }}" {% if comp.id == task.company_id %}selected{% endif %}>{{ comp.name }}{% if comp.sub_name %} / {{ comp.sub_name }}{% endif %}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <!-- Detail name -->
+    <div class="mb-3">
+        <label for="detail_name" class="form-label">상세 고객사</label>
+        <input type="text" class="form-control" id="detail_name" name="detail_name" placeholder="예: 홈페이지 / 다이렉트 / mydata 등" value="{{ task.detail_name or '' }}">
+    </div>
+    <!-- Task type -->
+    <div class="mb-3">
+        <label class="form-label">점검 유형</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="task_type" id="edit_type_in" value="INHOUSE" {% if task.task_type == 'INHOUSE' %}checked{% endif %}>
+                <label class="form-check-label" for="edit_type_in">사내점검</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="task_type" id="edit_type_out" value="ONSITE" {% if task.task_type == 'ONSITE' %}checked{% endif %}>
+                <label class="form-check-label" for="edit_type_out">방문점검</label>
+            </div>
+        </div>
+    </div>
+    <!-- Signature method -->
+    <div class="mb-3">
+        <label class="form-label">서명 방법</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="signature_method" id="edit_sig_email" value="EMAIL" {% if task.signature_method == 'EMAIL' %}checked{% endif %}>
+                <label class="form-check-label" for="edit_sig_email">메일</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="signature_method" id="edit_sig_visit" value="VISIT" {% if task.signature_method == 'VISIT' %}checked{% endif %}>
+                <label class="form-check-label" for="edit_sig_visit">방문</label>
+            </div>
+        </div>
+    </div>
+    <!-- Contact information -->
+    <div class="mb-3">
+        <label class="form-label">담당자 정보</label>
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="contact_name" placeholder="담당자 이름" value="{{ task.contact_name or '' }}">
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="contact_phone" placeholder="전화번호" value="{{ task.contact_phone or '' }}">
+            </div>
+            <div class="col-md-4">
+                <input type="email" class="form-control" name="contact_email" placeholder="이메일" value="{{ task.contact_email or '' }}">
+            </div>
+        </div>
+    </div>
+    <!-- Schedule type -->
+    <div class="mb-3">
+        <label for="schedule_type" class="form-label">스케줄 유형</label>
+        <select class="form-select" id="schedule_type" name="schedule_type" required onchange="onScheduleTypeChange()">
+            <option value="monthly" {% if task.schedule_type == 'monthly' %}selected{% endif %}>매월</option>
+            <option value="quarterly" {% if task.schedule_type == 'quarterly' %}selected{% endif %}>분기</option>
+            <option value="custom" {% if task.schedule_type not in ['monthly','quarterly'] %}selected{% endif %}>기타 (사용자 지정)</option>
+        </select>
+        <div id="scheduleDetailHelp" class="form-text"></div>
+    </div>
+    <div class="mb-3" id="schedule_detail_wrapper" style="{% if task.schedule_type == 'monthly' %}display:none{% endif %};">
+        <label for="schedule_detail" class="form-label">스케줄 상세 (쉼표로 구분된 월)</label>
+        <input type="text" class="form-control" id="schedule_detail" name="schedule_detail" placeholder="예: 1,4,7,10" value="{{ task.schedule_detail or '' }}">
+        <div class="form-text">분기나 기타 유형일 경우 수행할 월들을 쉼표로 입력하세요.</div>
+    </div>
+    <hr>
+    <!-- Checklist item editing -->
+    <h4>체크리스트 항목</h4>
+    {% if items %}
+        {% for it in items %}
+            <div class="border rounded p-3 mb-3">
+                <input type="hidden" name="existing_item_id" value="{{ it.id }}">
+                <div class="mb-2">
+                    <label class="form-label">설명</label>
+                    <input type="text" class="form-control" name="existing_item_description_{{ it.id }}" value="{{ it.description }}">
+                </div>
+                {% if it.attachment %}
+                    <div class="mb-2">
+                        <label class="form-label">기존 첨부파일</label>
+                        <a href="/attachments/{{ it.attachment }}" target="_blank">{{ it.attachment }}</a>
+                    </div>
+                {% endif %}
+                <div class="mb-2">
+                    <label class="form-label">새 첨부파일 (있을 경우 선택)</label>
+                    <input type="file" class="form-control" name="existing_item_file_{{ it.id }}">
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="delete_item_{{ it.id }}" value="1" id="delete_item_{{ it.id }}">
+                    <label class="form-check-label" for="delete_item_{{ it.id }}">이 항목 삭제</label>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">이 점검에는 아직 체크리스트 항목이 없습니다.</p>
+    {% endif %}
+    <!-- Container for new items -->
+    <div id="newItemsContainer"></div>
+    <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="addNewItem()">+ 새 항목 추가</button>
+    <hr>
+    <button type="submit" class="btn btn-primary">저장</button>
+    <a href="/" class="btn btn-secondary">취소</a>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function onScheduleTypeChange() {
+        const typeSelect = document.getElementById('schedule_type');
+        const detailWrapper = document.getElementById('schedule_detail_wrapper');
+        const help = document.getElementById('scheduleDetailHelp');
+        if (typeSelect.value === 'monthly') {
+            detailWrapper.style.display = 'none';
+            help.textContent = '매월 정기적으로 수행됩니다.';
+        } else if (typeSelect.value === 'quarterly') {
+            detailWrapper.style.display = 'block';
+            help.textContent = '예: 1,4,7,10 또는 3,6,9,12 등 분기 시작 월을 쉼표로 입력하세요.';
+        } else {
+            detailWrapper.style.display = 'block';
+            help.textContent = '수행할 월들을 쉼표로 입력하세요 (예: 2,5,8,11).';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', onScheduleTypeChange);
+    // Function to add new checklist item rows dynamically
+    function addNewItem() {
+        const container = document.getElementById('newItemsContainer');
+        const div = document.createElement('div');
+        div.className = 'border rounded p-3 mb-3';
+        div.innerHTML = `
+            <div class="mb-2">
+                <label class="form-label">새 항목 설명</label>
+                <input type="text" class="form-control" name="new_item_description" placeholder="설명">
+            </div>
+            <div class="mb-2">
+                <label class="form-label">첨부파일 (선택)</label>
+                <input type="file" class="form-control" name="new_item_file">
+            </div>
+        `;
+        container.appendChild(div);
+    }
+</script>
+{% endblock %}

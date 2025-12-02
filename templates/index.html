@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드 - 정기 점검 관리{% endblock %}
+
+{% block content %}
+<h1>대시보드</h1>
+
+<!-- Month and Year navigation -->
+<div class="month-nav my-3">
+    <!-- Year selector -->
+    <form class="d-inline me-3" method="get" action="/">
+        {# Year selector. We no longer include a hidden month field or rely on the browser auto‑submit. Instead,
+           the accompanying script (defined at the bottom of this template) listens for changes on the select
+           and performs a redirect to the same path with the chosen year and a reset month of 1. #}
+        <select name="year" id="year-select" class="form-select d-inline w-auto">
+            {% for y in years %}
+                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}년</option>
+            {% endfor %}
+        </select>
+    </form>
+    {% for m in range(1, 13) %}
+        {% set url = '?' %}
+        {% set url = url + 'month=' + m|string %}
+        {% if selected_year %}{% set url = url + '&year=' + selected_year|string %}{% endif %}
+        {% if selected_company %}{% set url = url + '&company=' + selected_company|string %}{% endif %}
+        {% set stats = month_stats[m] %}
+        {% set done = stats[0] %}
+        {% set total = stats[1] %}
+        {% if m == selected_month %}
+            <a class="btn btn-primary position-relative" href="/{{ url }}">
+                {{ m }}월
+                <span class="badge bg-light text-dark position-absolute top-0 start-100 translate-middle" style="font-size:0.7em;">{{ done }}/{{ total }}</span>
+            </a>
+        {% else %}
+            <a class="btn btn-outline-secondary position-relative" href="/{{ url }}">
+                {{ m }}월
+                <span class="badge bg-secondary position-absolute top-0 start-100 translate-middle" style="font-size:0.7em;">{{ done }}/{{ total }}</span>
+            </a>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Company filter form -->
+<form class="row g-3 mb-4" method="get" action="/">
+    <input type="hidden" name="month" value="{{ selected_month }}">
+    <input type="hidden" name="year" value="{{ selected_year }}">
+    <div class="col-auto">
+        <select class="form-select" name="company">
+            <option value="" {% if not selected_company %}selected{% endif %}>전체 고객사</option>
+            {% for comp in companies %}
+                <option value="{{ comp['id'] }}" {% if selected_company and comp['id'] == selected_company %}selected{% endif %}>
+                    {{ comp['name'] }}{% if comp['sub_name'] %} / {{ comp['sub_name'] }}{% endif %}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-secondary">필터</button>
+    </div>
+</form>
+
+<!-- Tasks table -->
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>고객사</th>
+        <th>상세 고객사</th>
+        <th>담당자</th>
+        <th>연락처</th>
+        <th>점검유형</th>
+        <th>서명방법</th>
+        <th>스케줄</th>
+        <th>진행률</th>
+        <th>상태</th>
+        <th>작업</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for task in tasks %}
+        <tr class="{% if task.is_overdue %}overdue{% endif %} accordion-toggle" data-bs-toggle="collapse" data-bs-target="#collapse{{ task.id }}" aria-expanded="false" aria-controls="collapse{{ task.id }}">
+            <td>{{ task.company_name }}</td>
+            <td>{{ task.detail_name or task.company_sub_name or '' }}</td>
+            <td>{{ task.contact_name or '' }}</td>
+            <td>{{ task.contact_phone or '' }}{% if task.contact_email %}<br><small>{{ task.contact_email }}</small>{% endif %}</td>
+            <td>{{ '사내점검' if task.task_type == 'INHOUSE' else '방문점검' }}</td>
+            <td>{{ '메일' if task.signature_method == 'EMAIL' else '방문' }}</td>
+            <td>
+                {% if task.schedule_type == 'monthly' %}매월
+                {% elif task.schedule_type == 'quarterly' %}분기 ({{ task.schedule_detail }})
+                {% else %}기타 ({{ task.schedule_detail }})
+                {% endif %}
+            </td>
+            <td style="min-width:120px;">
+                {% set total = task['items']|length %}
+                {% set done = total - task.incomplete_count %}
+                {% set percent = (done * 100 / total) if total > 0 else 0 %}
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ percent }}%;" aria-valuenow="{{ done }}" aria-valuemin="0" aria-valuemax="{{ total }}">
+                        {{ done }}/{{ total }}
+                    </div>
+                </div>
+            </td>
+            <td>
+                {% if task.is_overdue %}
+                    <span class="text-danger fw-bold">진행 중</span>
+                {% else %}
+                    <span class="text-success fw-bold">완료</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="/task/{{ task.id }}?year={{ selected_year }}&month={{ selected_month }}"
+                   class="btn btn-sm btn-outline-primary"
+                   onclick="event.stopPropagation();">상세</a>
+            </td>
+        </tr>
+        <tr class="collapse" id="collapse{{ task.id }}">
+            <td colspan="10">
+                <!-- Checklist items for this task -->
+                <ul class="list-group mb-3">
+                    {% for item in task['items'] %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start {% if item.completed %}completed{% endif %}">
+                            <div class="ms-2 me-auto">
+                                {% if item.attachment %}
+                                    <a href="/attachments/{{ item.attachment }}" class="fw-bold" target="_blank">파일</a> -
+                                {% endif %}
+                                {{ item.description }}
+                            </div>
+                            <div>
+                                <form method="post" action="/task/{{ task.id }}/toggle/{{ item.id }}">
+                                    <input type="hidden" name="year" value="{{ selected_year }}">
+                                    <input type="hidden" name="month" value="{{ selected_month }}">
+                                    {% if selected_company %}<input type="hidden" name="company" value="{{ selected_company }}">{% endif %}
+                                    <button type="submit" class="btn btn-sm {% if item.completed %}btn-warning{% else %}btn-success{% endif %}">
+                                        {% if item.completed %}취소{% else %}완료{% endif %}
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="list-group-item">체크리스트 항목이 없습니다.</li>
+                    {% endfor %}
+                </ul>
+            </td>
+        </tr>
+    {% else %}
+        <tr><td colspan="10" class="text-center">해당 월에 표시할 점검이 없습니다.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// When the year dropdown changes, reset the month to January (1) and preserve the company filter if set.
+document.addEventListener('DOMContentLoaded', function() {
+    var yearSelect = document.getElementById('year-select');
+    if (yearSelect) {
+        yearSelect.addEventListener('change', function() {
+            var year = this.value;
+            var url = new URL(window.location.href);
+            // Always reset month to 1 when changing year
+            url.searchParams.set('year', year);
+            url.searchParams.set('month', '1');
+            // Preserve company filter if a company is selected
+            var companySelect = document.querySelector('select[name="company"]');
+            if (companySelect && companySelect.value) {
+                url.searchParams.set('company', companySelect.value);
+            } else {
+                url.searchParams.delete('company');
+            }
+            // Redirect to the updated URL (keep the path, only replace query string)
+            window.location.href = url.pathname + '?' + url.searchParams.toString();
+        });
+    }
+});
+</script>
+{% endblock %}

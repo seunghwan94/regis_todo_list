@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}전체 점검 리스트 - 정기 점검 관리{% endblock %}
+
+{% block content %}
+<h1>전체 점검 리스트</h1>
+
+<!-- Hidden form for bulk hide/show actions -->
+<form id="bulkActionForm" method="post" action="/tasks/update"></form>
+
+<div class="mb-2">
+    <button type="submit" form="bulkActionForm" name="action" value="hide" class="btn btn-sm btn-danger">선택 숨기기</button>
+    <button type="submit" form="bulkActionForm" name="action" value="show" class="btn btn-sm btn-success ms-1">선택 보이기</button>
+    <span class="ms-2 text-muted" style="font-size:0.9em;">체크된 항목을 숨기거나 다시 보이게 할 수 있습니다.</span>
+</div>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">선택</th>
+            <th scope="col">고객사</th>
+            <th scope="col">상세 고객사</th>
+            <th scope="col">담당자</th>
+            <th scope="col">연락처</th>
+            <th scope="col">점검유형</th>
+            <th scope="col">서명방법</th>
+            <th scope="col">스케줄</th>
+            <th scope="col">실행 여부</th>
+            <th scope="col">상태</th>
+            <th scope="col">작업</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for task in tasks %}
+            <tr {% if task.active == 0 %}class="table-secondary"{% endif %}>
+                <td>
+                    <input type="checkbox" name="task_ids" value="{{ task.id }}" form="bulkActionForm">
+                </td>
+                <td>{{ task.company_name }}</td>
+                <td>{{ task.detail_name or task.company_sub_name or '' }}</td>
+                <td>{{ task.contact_name or '' }}</td>
+                <td>{{ task.contact_phone or '' }}{% if task.contact_email %}<br><small>{{ task.contact_email }}</small>{% endif %}</td>
+                <td>{{ '사내점검' if task.task_type == 'INHOUSE' else '방문점검' }}</td>
+                <td>{{ '메일' if task.signature_method == 'EMAIL' else '방문' }}</td>
+                <td>
+                    {% if task.schedule_type == 'monthly' %}매월
+                    {% elif task.schedule_type == 'quarterly' %}분기 ({{ task.schedule_detail }})
+                    {% else %}기타 ({{ task.schedule_detail }})
+                    {% endif %}
+                </td>
+                <td>
+                    {% if task.completed_count > 0 %}
+                        <span class="badge bg-success">실행됨</span>
+                    {% else %}
+                        <span class="badge bg-secondary">미실행</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if task.active == 1 %}
+                        <span class="text-success">표시 중</span>
+                    {% else %}
+                        <span class="text-muted">숨김</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/task/{{ task.id }}" class="btn btn-sm btn-outline-primary">보기</a>
+                    <a href="/task/{{ task.id }}/edit" class="btn btn-sm btn-outline-secondary ms-1">수정</a>
+                    <form method="post" action="/task/{{ task.id }}/delete" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1">삭제</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="11" class="text-center">등록된 점검이 없습니다.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

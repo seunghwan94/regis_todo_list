@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}점검 상세 보기 - 정기 점검 관리{% endblock %}
+
+{% block content %}
+<h1>점검 상세</h1>
+
+<div class="mb-3">
+    <h4>{{ task.company_name }}{% if task.detail_name or task.company_sub_name %} / {{ task.detail_name or task.company_sub_name }}{% endif %}</h4>
+    <p>
+        <strong>점검 유형:</strong> {{ '사내점검' if task.task_type == 'INHOUSE' else '방문점검' }}<br>
+        <strong>서명 방법:</strong> {{ '메일' if task.signature_method == 'EMAIL' else '방문' }}<br>
+        <strong>스케줄:</strong>
+        {% if task.schedule_type == 'monthly' %}매월
+        {% elif task.schedule_type == 'quarterly' %}분기 ({{ task.schedule_detail }})
+        {% else %}기타 ({{ task.schedule_detail }})
+        {% endif %}
+        <br><strong>담당자:</strong> {{ task.contact_name or '' }} {% if task.contact_phone %} / {{ task.contact_phone }}{% endif %}{% if task.contact_email %} / {{ task.contact_email }}{% endif %}
+    </p>
+</div>
+
+<hr>
+<h5>체크리스트</h5>
+<ul class="list-group">
+    {% for item in items %}
+        <li class="list-group-item d-flex justify-content-between align-items-start {% if item.completed %}completed{% endif %}">
+            <div class="ms-2 me-auto">
+                {% if item.attachment %}
+                    <a href="/attachments/{{ item.attachment }}" class="fw-bold" target="_blank">파일</a> -
+                {% endif %}
+                {{ item.description }}
+            </div>
+            <div>
+                <form method="post" action="/task/{{ task.id }}/toggle/{{ item.id }}">
+                    <input type="hidden" name="year" value="{{ selected_year }}">
+                    <input type="hidden" name="month" value="{{ selected_month }}">
+                    <button type="submit" class="btn btn-sm {% if item.completed %}btn-warning{% else %}btn-success{% endif %}">
+                        {% if item.completed %}취소{% else %}완료{% endif %}
+                    </button>
+                </form>
+            </div>
+        </li>
+    {% else %}
+        <li class="list-group-item">체크리스트 항목이 없습니다.</li>
+    {% endfor %}
+</ul>
+
+<hr>
+<a href="/" class="btn btn-secondary">목록으로 돌아가기</a>
+{% endblock %}
