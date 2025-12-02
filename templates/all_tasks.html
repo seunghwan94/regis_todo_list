@@ -3,76 +3,164 @@
 {% block title %}전체 점검 리스트 - 정기 점검 관리{% endblock %}
 
 {% block content %}
-<h1>전체 점검 리스트</h1>
-
-<!-- Hidden form for bulk hide/show actions -->
-<form id="bulkActionForm" method="post" action="/tasks/update"></form>
-
-<div class="mb-2">
-    <button type="submit" form="bulkActionForm" name="action" value="hide" class="btn btn-sm btn-danger">선택 숨기기</button>
-    <button type="submit" form="bulkActionForm" name="action" value="show" class="btn btn-sm btn-success ms-1">선택 보이기</button>
-    <span class="ms-2 text-muted" style="font-size:0.9em;">체크된 항목을 숨기거나 다시 보이게 할 수 있습니다.</span>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-list-ul me-3"></i>전체 점검 리스트</h1>
 </div>
 
-    <table class="table table-striped">
+<!-- Bulk Action Controls -->
+<form id="bulkActionForm" method="post" action="/tasks/update"></form>
+
+<div class="card mb-4" style="border: none; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); border-radius: 16px; padding: 1.5rem;">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button type="submit" form="bulkActionForm" name="action" value="hide" class="btn btn-danger">
+            <i class="bi bi-eye-slash-fill me-2"></i>선택 숨기기
+        </button>
+        <button type="submit" form="bulkActionForm" name="action" value="show" class="btn btn-success">
+            <i class="bi bi-eye-fill me-2"></i>선택 보이기
+        </button>
+        <span class="text-muted ms-3">
+            <i class="bi bi-info-circle me-2"></i>체크된 항목을 숨기거나 다시 보이게 할 수 있습니다.
+        </span>
+    </div>
+</div>
+
+<!-- Tasks Table -->
+<div class="table-responsive">
+    <table class="table">
         <thead>
         <tr>
-            <th scope="col">선택</th>
-            <th scope="col">고객사</th>
-            <th scope="col">상세 고객사</th>
-            <th scope="col">담당자</th>
-            <th scope="col">연락처</th>
-            <th scope="col">점검유형</th>
-            <th scope="col">서명방법</th>
-            <th scope="col">스케줄</th>
-            <th scope="col">실행 여부</th>
-            <th scope="col">상태</th>
-            <th scope="col">작업</th>
+            <th style="width: 50px;">
+                <input type="checkbox" class="form-check-input" id="selectAll">
+            </th>
+            <th><i class="bi bi-building me-2"></i>고객사</th>
+            <th><i class="bi bi-card-text me-2"></i>상세 고객사</th>
+            <th><i class="bi bi-person me-2"></i>담당자</th>
+            <th><i class="bi bi-telephone me-2"></i>연락처</th>
+            <th><i class="bi bi-clipboard-check me-2"></i>점검유형</th>
+            <th><i class="bi bi-pen me-2"></i>서명방법</th>
+            <th><i class="bi bi-calendar-range me-2"></i>스케줄</th>
+            <th><i class="bi bi-clock-history me-2"></i>실행 여부</th>
+            <th><i class="bi bi-eye me-2"></i>상태</th>
+            <th><i class="bi bi-gear me-2"></i>작업</th>
         </tr>
         </thead>
         <tbody>
         {% for task in tasks %}
-            <tr {% if task.active == 0 %}class="table-secondary"{% endif %}>
+            <tr {% if task.active == 0 %}style="opacity: 0.5; background: rgba(0,0,0,0.03);"{% endif %}>
                 <td>
-                    <input type="checkbox" name="task_ids" value="{{ task.id }}" form="bulkActionForm">
+                    <input type="checkbox" class="form-check-input task-checkbox" name="task_ids" value="{{ task.id }}" form="bulkActionForm">
                 </td>
-                <td>{{ task.company_name }}</td>
-                <td>{{ task.detail_name or task.company_sub_name or '' }}</td>
-                <td>{{ task.contact_name or '' }}</td>
-                <td>{{ task.contact_phone or '' }}{% if task.contact_email %}<br><small>{{ task.contact_email }}</small>{% endif %}</td>
-                <td>{{ '사내점검' if task.task_type == 'INHOUSE' else '방문점검' }}</td>
-                <td>{{ '메일' if task.signature_method == 'EMAIL' else '방문' }}</td>
+                <td class="fw-semibold">{{ task.company_name }}</td>
                 <td>
-                    {% if task.schedule_type == 'monthly' %}매월
-                    {% elif task.schedule_type == 'quarterly' %}분기 ({{ task.schedule_detail }})
-                    {% else %}기타 ({{ task.schedule_detail }})
+                    {% if task.detail_name or task.company_sub_name %}
+                        <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            {{ task.detail_name or task.company_sub_name }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
                     {% endif %}
+                </td>
+                <td>{{ task.contact_name or '-' }}</td>
+                <td>
+                    {% if task.contact_phone %}
+                        <small><i class="bi bi-telephone-fill me-1"></i>{{ task.contact_phone }}</small>
+                    {% endif %}
+                    {% if task.contact_email %}
+                        <br><small><i class="bi bi-envelope-fill me-1"></i>{{ task.contact_email }}</small>
+                    {% endif %}
+                    {% if not task.contact_phone and not task.contact_email %}-{% endif %}
+                </td>
+                <td>
+                    <span class="badge {% if task.task_type == 'INHOUSE' %}bg-info{% else %}bg-warning{% endif %}">
+                        {{ '🏢 사내점검' if task.task_type == 'INHOUSE' else '🚗 방문점검' }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">
+                        {{ '📧 메일' if task.signature_method == 'EMAIL' else '✍️ 방문' }}
+                    </span>
+                </td>
+                <td>
+                    <small>
+                        {% if task.schedule_type == 'monthly' %}
+                            <i class="bi bi-arrow-repeat me-1"></i>매월
+                        {% elif task.schedule_type == 'quarterly' %}
+                            <i class="bi bi-calendar3 me-1"></i>분기 ({{ task.schedule_detail }})
+                        {% else %}
+                            <i class="bi bi-calendar-week me-1"></i>기타 ({{ task.schedule_detail }})
+                        {% endif %}
+                    </small>
                 </td>
                 <td>
                     {% if task.completed_count > 0 %}
-                        <span class="badge bg-success">실행됨</span>
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle-fill me-1"></i>실행됨
+                        </span>
                     {% else %}
-                        <span class="badge bg-secondary">미실행</span>
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-dash-circle me-1"></i>미실행
+                        </span>
                     {% endif %}
                 </td>
                 <td>
                     {% if task.active == 1 %}
-                        <span class="text-success">표시 중</span>
+                        <span class="badge bg-success">
+                            <i class="bi bi-eye-fill me-1"></i>표시 중
+                        </span>
                     {% else %}
-                        <span class="text-muted">숨김</span>
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-eye-slash-fill me-1"></i>숨김
+                        </span>
                     {% endif %}
                 </td>
                 <td>
-                    <a href="/task/{{ task.id }}" class="btn btn-sm btn-outline-primary">보기</a>
-                    <a href="/task/{{ task.id }}/edit" class="btn btn-sm btn-outline-secondary ms-1">수정</a>
-                    <form method="post" action="/task/{{ task.id }}/delete" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?');">
-                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1">삭제</button>
-                    </form>
+                    <div class="btn-group" role="group">
+                        <a href="/task/{{ task.id }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="/task/{{ task.id }}/edit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="/task/{{ task.id }}/delete" class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="11" class="text-center">등록된 점검이 없습니다.</td></tr>
+            <tr>
+                <td colspan="11" class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
+                    <p class="text-muted mb-0">등록된 점검이 없습니다.</p>
+                </td>
+            </tr>
         {% endfor %}
         </tbody>
     </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all functionality
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.task-checkbox');
+    
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    }
+    
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = Array.from(checkboxes).every(c => c.checked);
+            if (selectAll) selectAll.checked = allChecked;
+        });
+    });
+});
+</script>
 {% endblock %}

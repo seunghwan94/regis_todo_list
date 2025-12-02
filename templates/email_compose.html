@@ -3,27 +3,113 @@
 {% block title %}메일 작성 - 정기 점검 관리{% endblock %}
 
 {% block content %}
-<h1>{{ company_name }} - {{ year }}년 {{ month }}월 메일 작성</h1>
-<p class="mb-3">아래의 내용을 복사하여 메일로 보내세요. 버튼을 클릭하면 기본 메일 프로그램이 열립니다.</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-envelope-fill me-3"></i>메일 작성</h1>
+    <a href="/" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>대시보드로
+    </a>
+</div>
 
-<div class="mb-3">
-    <label class="form-label"><strong>받는 사람</strong></label>
+<!-- Company and Date Info -->
+<div class="card mb-4" style="border: none; background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-radius: 16px; padding: 1.5rem;">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-building-fill fs-3" style="color: #667eea;"></i>
+        <div>
+            <h4 class="mb-1" style="color: #667eea;">{{ company_name }}</h4>
+            <p class="mb-0 text-muted">
+                <i class="bi bi-calendar-event me-2"></i>{{ year }}년 {{ month }}월 정기점검 결과
+            </p>
+        </div>
+    </div>
+</div>
+
+<p class="mb-4 text-muted">
+    <i class="bi bi-info-circle me-2"></i>
+    아래의 내용을 복사하여 메일로 보내거나, 버튼을 클릭하면 기본 메일 프로그램이 열립니다.
+</p>
+
+<!-- Recipients -->
+<div class="card mb-3" style="border: none; background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+    <label class="form-label fw-bold mb-3">
+        <i class="bi bi-people-fill me-2"></i>받는 사람
+    </label>
     {% if recipients %}
-        <p>{{ recipients | join(', ') }}</p>
+        <div class="d-flex flex-wrap gap-2">
+            {% for recipient in recipients %}
+                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    <i class="bi bi-envelope me-1"></i>{{ recipient }}
+                </span>
+            {% endfor %}
+        </div>
     {% else %}
-        <p class="text-muted">지정된 이메일 주소가 없습니다.</p>
+        <div class="alert alert-warning mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i>지정된 이메일 주소가 없습니다.
+        </div>
     {% endif %}
 </div>
-<div class="mb-3">
-    <label class="form-label"><strong>제목</strong></label>
-    <input type="text" class="form-control" readonly value="{{ subject }}">
-</div>
-<div class="mb-3">
-    <label class="form-label"><strong>본문</strong></label>
-    <textarea class="form-control" rows="12" readonly>{{ body_text }}</textarea>
+
+<!-- Subject -->
+<div class="card mb-3" style="border: none; background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+    <label class="form-label fw-bold mb-3">
+        <i class="bi bi-tag-fill me-2"></i>제목
+    </label>
+    <div class="input-group">
+        <span class="input-group-text" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: none;">
+            <i class="bi bi-envelope"></i>
+        </span>
+        <input type="text" class="form-control" readonly value="{{ subject }}" style="border: none; background: rgba(0,0,0,0.02);">
+    </div>
 </div>
 
-<a href="{{ mailto_link }}" class="btn btn-success">메일 앱으로 보내기</a>
-<a href="/" class="btn btn-secondary ms-2">대시보드로 돌아가기</a>
+<!-- Body -->
+<div class="card mb-4" style="border: none; background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+    <label class="form-label fw-bold mb-3">
+        <i class="bi bi-card-text me-2"></i>본문
+    </label>
+    <textarea class="form-control" rows="14" readonly style="font-family: 'Courier New', monospace; background: rgba(0,0,0,0.02); border: none; font-size: 0.9rem;">{{ body_text }}</textarea>
+</div>
 
+<!-- Action Buttons -->
+<div class="d-flex gap-2 flex-wrap">
+    <a href="{{ mailto_link }}" class="btn btn-success btn-lg">
+        <i class="bi bi-send-fill me-2"></i>메일 앱으로 보내기
+    </a>
+    <button type="button" class="btn btn-primary btn-lg" onclick="copyToClipboard()">
+        <i class="bi bi-clipboard-fill me-2"></i>내용 복사하기
+    </button>
+    <a href="/" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left me-2"></i>대시보드로 돌아가기
+    </a>
+</div>
+
+<!-- Success Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="copyToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle-fill me-2"></i>클립보드에 복사되었습니다!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToClipboard() {
+    const subject = "{{ subject }}";
+    const body = `{{ body_text|safe }}`;
+    const fullText = `제목: ${subject}\n\n${body}`;
+    
+    navigator.clipboard.writeText(fullText).then(function() {
+        const toastEl = document.getElementById('copyToast');
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }).catch(function(err) {
+        alert('복사에 실패했습니다: ' + err);
+    });
+}
+</script>
 {% endblock %}

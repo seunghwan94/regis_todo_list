@@ -3,48 +3,142 @@
 {% block title %}점검 상세 보기 - 정기 점검 관리{% endblock %}
 
 {% block content %}
-<h1>점검 상세</h1>
-
-<div class="mb-3">
-    <h4>{{ task.company_name }}{% if task.detail_name or task.company_sub_name %} / {{ task.detail_name or task.company_sub_name }}{% endif %}</h4>
-    <p>
-        <strong>점검 유형:</strong> {{ '사내점검' if task.task_type == 'INHOUSE' else '방문점검' }}<br>
-        <strong>서명 방법:</strong> {{ '메일' if task.signature_method == 'EMAIL' else '방문' }}<br>
-        <strong>스케줄:</strong>
-        {% if task.schedule_type == 'monthly' %}매월
-        {% elif task.schedule_type == 'quarterly' %}분기 ({{ task.schedule_detail }})
-        {% else %}기타 ({{ task.schedule_detail }})
-        {% endif %}
-        <br><strong>담당자:</strong> {{ task.contact_name or '' }} {% if task.contact_phone %} / {{ task.contact_phone }}{% endif %}{% if task.contact_email %} / {{ task.contact_email }}{% endif %}
-    </p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-eye me-3"></i>점검 상세</h1>
+    <a href="/" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>목록으로
+    </a>
 </div>
 
-<hr>
-<h5>체크리스트</h5>
-<ul class="list-group">
-    {% for item in items %}
-        <li class="list-group-item d-flex justify-content-between align-items-start {% if item.completed %}completed{% endif %}">
-            <div class="ms-2 me-auto">
-                {% if item.attachment %}
-                    <a href="/attachments/{{ item.attachment }}" class="fw-bold" target="_blank">파일</a> -
-                {% endif %}
-                {{ item.description }}
+<!-- Task Information Card -->
+<div class="card mb-4" style="border: none; background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-radius: 16px; padding: 2rem;">
+    <h3 class="mb-4" style="color: #667eea;">
+        <i class="bi bi-building-fill me-2"></i>
+        {{ task.company_name }}
+        {% if task.detail_name or task.company_sub_name %}
+            <span class="badge ms-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 0.6em;">
+                {{ task.detail_name or task.company_sub_name }}
+            </span>
+        {% endif %}
+    </h3>
+    
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-clipboard-check-fill fs-4" style="color: #667eea;"></i>
+                <div>
+                    <div class="text-muted small mb-1">점검 유형</div>
+                    <div class="fw-semibold">
+                        {{ '🏢 사내점검' if task.task_type == 'INHOUSE' else '🚗 방문점검' }}
+                    </div>
+                </div>
             </div>
-            <div>
-                <form method="post" action="/task/{{ task.id }}/toggle/{{ item.id }}">
-                    <input type="hidden" name="year" value="{{ selected_year }}">
-                    <input type="hidden" name="month" value="{{ selected_month }}">
-                    <button type="submit" class="btn btn-sm {% if item.completed %}btn-warning{% else %}btn-success{% endif %}">
-                        {% if item.completed %}취소{% else %}완료{% endif %}
-                    </button>
-                </form>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-pen-fill fs-4" style="color: #764ba2;"></i>
+                <div>
+                    <div class="text-muted small mb-1">서명 방법</div>
+                    <div class="fw-semibold">
+                        {{ '📧 메일' if task.signature_method == 'EMAIL' else '✍️ 방문' }}
+                    </div>
+                </div>
             </div>
-        </li>
-    {% else %}
-        <li class="list-group-item">체크리스트 항목이 없습니다.</li>
-    {% endfor %}
-</ul>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-calendar-range-fill fs-4" style="color: #11998e;"></i>
+                <div>
+                    <div class="text-muted small mb-1">스케줄</div>
+                    <div class="fw-semibold">
+                        {% if task.schedule_type == 'monthly' %}
+                            <i class="bi bi-arrow-repeat me-1"></i>매월
+                        {% elif task.schedule_type == 'quarterly' %}
+                            <i class="bi bi-calendar3 me-1"></i>분기 ({{ task.schedule_detail }})
+                        {% else %}
+                            <i class="bi bi-calendar-week me-1"></i>기타 ({{ task.schedule_detail }})
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-person-fill fs-4" style="color: #f093fb;"></i>
+                <div>
+                    <div class="text-muted small mb-1">담당자 정보</div>
+                    <div class="fw-semibold">
+                        {{ task.contact_name or '-' }}
+                        {% if task.contact_phone %}
+                            <br><small class="text-muted"><i class="bi bi-telephone-fill me-1"></i>{{ task.contact_phone }}</small>
+                        {% endif %}
+                        {% if task.contact_email %}
+                            <br><small class="text-muted"><i class="bi bi-envelope-fill me-1"></i>{{ task.contact_email }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<hr>
-<a href="/" class="btn btn-secondary">목록으로 돌아가기</a>
+<!-- Checklist Card -->
+<div class="card" style="border: none; background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+    <h5 class="mb-4">
+        <i class="bi bi-list-check me-2"></i>체크리스트 ({{ selected_year }}년 {{ selected_month }}월)
+    </h5>
+    
+    {% if items %}
+        <div class="list-group list-group-flush">
+            {% for item in items %}
+                <div class="list-group-item d-flex justify-content-between align-items-start {% if item.completed %}completed{% endif %}" style="border: none; border-bottom: 1px solid rgba(0,0,0,0.05) !important; padding: 1.5rem 0;">
+                    <div class="d-flex align-items-start gap-3 flex-grow-1">
+                        {% if item.completed %}
+                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                        {% else %}
+                            <i class="bi bi-circle text-muted fs-4"></i>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            {% if item.attachment %}
+                                <div class="mb-2">
+                                    <a href="/attachments/{{ item.attachment }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-paperclip me-1"></i>첨부파일 다운로드
+                                    </a>
+                                </div>
+                            {% endif %}
+                            <div class="{% if item.completed %}text-decoration-line-through text-muted{% else %}fw-medium{% endif %}">
+                                {{ item.description }}
+                            </div>
+                        </div>
+                    </div>
+                    <form method="post" action="/task/{{ task.id }}/toggle/{{ item.id }}">
+                        <input type="hidden" name="year" value="{{ selected_year }}">
+                        <input type="hidden" name="month" value="{{ selected_month }}">
+                        <button type="submit" class="btn btn-sm {% if item.completed %}btn-warning{% else %}btn-success{% endif %}">
+                            {% if item.completed %}
+                                <i class="bi bi-x-circle me-1"></i>취소
+                            {% else %}
+                                <i class="bi bi-check-circle me-1"></i>완료
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle me-2"></i>체크리스트 항목이 없습니다.
+        </div>
+    {% endif %}
+</div>
+
+<div class="mt-4">
+    <a href="/" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left me-2"></i>목록으로 돌아가기
+    </a>
+</div>
+
 {% endblock %}

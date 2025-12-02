@@ -3,17 +3,52 @@
 {% block title %}새 고객사 추가 - 정기 점검 관리{% endblock %}
 
 {% block content %}
-<h1>새 고객사 추가</h1>
+<h1><i class="bi bi-building-add me-3"></i>새 고객사 추가</h1>
+
 <form method="post" action="/company/new">
-    <div class="mb-3">
-        <label for="name" class="form-label">고객사 이름</label>
-        <input type="text" class="form-control" id="name" name="name" required>
+    <div class="card mb-4" style="border: none; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); border-radius: 16px; padding: 2rem;">
+        <div class="mb-4">
+            <label for="name" class="form-label">
+                <i class="bi bi-building me-2"></i>고객사 이름
+            </label>
+            <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="예: ABC 주식회사" required>
+            <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>고객사의 정식 명칭을 입력하세요.
+            </div>
+        </div>
+        
+        <div class="mb-0">
+            <label for="sub_name" class="form-label">
+                <i class="bi bi-card-text me-2"></i>상세 고객사 (선택)
+            </label>
+            <input type="text" class="form-control form-control-lg" id="sub_name" name="sub_name" placeholder="예: 본사, 지점명 등">
+            <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>필요한 경우 상세 정보를 입력하세요. (선택사항)
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="sub_name" class="form-label">상세 고객사 (선택)</label>
-        <input type="text" class="form-control" id="sub_name" name="sub_name">
+    
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-circle me-2"></i>저장
+        </button>
+        <a href="/" class="btn btn-secondary btn-lg">
+            <i class="bi bi-x-circle me-2"></i>취소
+        </a>
     </div>
-    <button type="submit" class="btn btn-primary">저장</button>
-    <a href="/" class="btn btn-secondary">취소</a>
 </form>
+
+<!-- Info Card -->
+<div class="card mt-4" style="border: none; background: linear-gradient(135deg, rgba(17, 153, 142, 0.05) 0%, rgba(56, 239, 125, 0.05) 100%); border-radius: 16px; padding: 1.5rem;">
+    <div class="d-flex gap-3">
+        <i class="bi bi-lightbulb-fill fs-3" style="color: #11998e;"></i>
+        <div>
+            <h6 class="mb-2" style="color: #11998e;">💡 Tip</h6>
+            <p class="mb-0 text-muted">
+                고객사를 추가한 후 "새 점검 추가" 메뉴에서 해당 고객사에 대한 정기점검을 등록할 수 있습니다.
+            </p>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
