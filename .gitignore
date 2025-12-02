@@ -1,0 +1,52 @@
+# 1. Python 관련 파일 (Python-specific files)
+# 파이썬 컴파일된 바이트코드 파일 (Compiled Python files)
+__pycache__/
+*.pyc
+
+# 가상 환경 (Virtual Environment)
+.venv/
+env/
+venv/
+VENV/
+
+# 빌드 및 배포 관련 파일 (Distribution / packaging)
+.eggs/
+*.egg-info/
+dist/
+build/
+
+# 2. 데이터베이스 및 세션 파일 (Database and Session files)
+# 로컬 개발 환경에서 사용되는 파일은 무시합니다.
+# (Git에 database.db 파일을 커밋하면 충돌이 발생하기 쉽습니다.)
+# database.db
+# *.db
+*.sqlite3
+*.sqlite
+# *.db-journal
+
+# 3. 로그 파일 (Log files)
+*.log
+*.err
+*.out
+
+# 4. OS 관련 파일 (OS-related files)
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# 5. 민감 정보 파일 (Sensitive Data/Secrets)
+# 환경 변수 및 설정 파일 (프로덕션 환경 정보 포함 가능)
+# (파일명이 다를 경우, 프로젝트에 맞게 수정하세요)
+.env
+.flaskenv
+settings_local.py
+config.ini
+
+# 6. Docker 관련 파일
+# Docker 빌드 시 생성되는 파일들 (Docker build output)
+# (Docker 이미지 자체는 포함하지 않는 것이 일반적입니다)
+*.swp
+
+# 7. IDE 관련 파일 (Integrated Development Environment)
+# 예를 들어 Visual Studio Code, PyCharm 등
+.vscode/
+.idea/
