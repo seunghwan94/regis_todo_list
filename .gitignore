@@ -1,6 +1,6 @@
 # 1. Python 관련 파일 (Python-specific files)
 # 파이썬 컴파일된 바이트코드 파일 (Compiled Python files)
-__pycache__/
+# __pycache__/
 *.pyc
 
 # 가상 환경 (Virtual Environment)
